@@ -34,14 +34,11 @@ const CRITICAL_CHAT_CLIENT_METHODS = [
   "getTranscript"
 ];
 
-const OPTIONAL_CHAT_CLIENT_METHODS = [
-  "sendAttachment",
-  "downloadAttachment",
-  "getAttachmentURL",
-  "describeView",
-  "getAuthenticationUrl",
-  "cancelParticipantAuthentication"
-];
+// Derived, so a new operation on the base class needs no second list. Read lazily because
+// ChatClient is declared below this point.
+const optionalChatClientMethods = () =>
+  Object.getOwnPropertyNames(ChatClient.prototype)
+    .filter(name => name !== "constructor" && !CRITICAL_CHAT_CLIENT_METHODS.includes(name));
 
 class ChatClientFactoryImpl {
   constructor() {
@@ -51,7 +48,9 @@ class ChatClientFactoryImpl {
 
   getCachedClient(optionsInput, logMetaData) {
     // Not cached: a per-session client must not leak into another session.
-    const customChatClient = optionsInput.customChatClient || GlobalConfig.getCustomChatClient();
+    const customChatClient = optionsInput.customChatClient !== undefined
+      ? optionsInput.customChatClient
+      : GlobalConfig.getCustomChatClient();
     if (customChatClient) {
       logMetaData.usingCustomChatClient = true;
       this._reportUnimplementedMethods(customChatClient, logMetaData);
@@ -72,7 +71,7 @@ class ChatClientFactoryImpl {
     const unimplemented = name =>
       typeof client[name] !== "function" || client[name] === ChatClient.prototype[name];
     const missingCritical = CRITICAL_CHAT_CLIENT_METHODS.filter(unimplemented);
-    const missingOptional = OPTIONAL_CHAT_CLIENT_METHODS.filter(unimplemented);
+    const missingOptional = optionalChatClientMethods().filter(unimplemented);
     if (missingCritical.length === 0 && missingOptional.length === 0) {
       return;
     }
@@ -123,12 +122,12 @@ class ChatClient {
    *   ConnectionCredentials: {ConnectionToken: string, Expiry: string}}}>}
    */
   createParticipantConnection(participantToken, type, acknowledgeConnection) {
-    throw new UnImplementedMethodException("createParticipantConnection in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("createParticipantConnection in ChatClient"));
   }
 
   /** Ends the contact. @returns {Promise<{data: {}}>} */
   disconnectParticipant(connectionToken) {
-    throw new UnImplementedMethodException("disconnectParticipant in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("disconnectParticipant in ChatClient"));
   }
 
   /**
@@ -136,7 +135,7 @@ class ChatClient {
    * @returns {Promise<{data: {Id: string, AbsoluteTime: string}}>}
    */
   sendMessage(connectionToken, content, contentType, clientToken) {
-    throw new UnImplementedMethodException("sendMessage in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("sendMessage in ChatClient"));
   }
 
   /**
@@ -144,7 +143,7 @@ class ChatClient {
    * @returns {Promise<{data: {Id: string, AbsoluteTime: string}}>}
    */
   sendEvent(connectionToken, contentType, content, clientToken) {
-    throw new UnImplementedMethodException("sendEvent in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("sendEvent in ChatClient"));
   }
 
   /**
@@ -154,7 +153,7 @@ class ChatClient {
    * @returns {Promise<{data: {InitialContactId: string, Transcript: Array<Object>, NextToken: string}}>}
    */
   getTranscript(connectionToken, args) {
-    throw new UnImplementedMethodException("getTranscript in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("getTranscript in ChatClient"));
   }
 
   /**
@@ -162,32 +161,32 @@ class ChatClient {
    * @returns {Promise<{data: {}}>}
    */
   sendAttachment(connectionToken, attachment, metadata) {
-    throw new UnImplementedMethodException("sendAttachment in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("sendAttachment in ChatClient"));
   }
 
   /** Resolves to the bytes, not a `{ data }` wrapper. @returns {Promise<Blob>} */
   downloadAttachment(connectionToken, attachmentId) {
-    throw new UnImplementedMethodException("downloadAttachment in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("downloadAttachment in ChatClient"));
   }
 
   /** Resolves to the URL string, not a `{ data }` wrapper. @returns {Promise<string>} */
   getAttachmentURL(connectionToken, attachmentId) {
-    throw new UnImplementedMethodException("getAttachmentURL in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("getAttachmentURL in ChatClient"));
   }
 
   /** viewToken comes first here. @returns {Promise<{data: {View: Object}}>} */
   describeView(viewToken, connectionToken) {
-    throw new UnImplementedMethodException("describeView in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("describeView in ChatClient"));
   }
 
   /** @returns {Promise<{data: {AuthenticationUrl: string}}>} */
   getAuthenticationUrl(connectionToken, redirectUri, sessionId) {
-    throw new UnImplementedMethodException("getAuthenticationUrl in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("getAuthenticationUrl in ChatClient"));
   }
 
   /** @returns {Promise<{data: {}}>} */
   cancelParticipantAuthentication(connectionToken, sessionId) {
-    throw new UnImplementedMethodException("cancelParticipantAuthentication in ChatClient");
+    return Promise.reject(new UnImplementedMethodException("cancelParticipantAuthentication in ChatClient"));
   }
 }
 /*eslint-enable*/

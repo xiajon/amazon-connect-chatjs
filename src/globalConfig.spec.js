@@ -115,6 +115,18 @@ describe("globalConfig", () => {
             GlobalConfig.update({ customChatClient: null });
             expect(GlobalConfig.getCustomChatClient()).toBeNull();
         });
+
+        // `{ ...base, customChatClient: props.client }` from a second caller carries the key
+        // with an undefined value; dropping the client there sends tokens straight to ACPS.
+        it("preserves the client when the key is present but undefined", () => {
+            GlobalConfig.update({ customChatClient: clientA });
+            GlobalConfig.update({ region: "eu-west-1", customChatClient: undefined });
+            expect(GlobalConfig.getCustomChatClient()).toBe(clientA);
+        });
+
+        it("does not throw when update is called with a non-object", () => {
+            expect(() => GlobalConfig.update("us-west-2")).not.toThrow();
+        });
     });
 
     describe("About using default logger", () => {

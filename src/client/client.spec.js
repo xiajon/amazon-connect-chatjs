@@ -439,4 +439,39 @@ describe("customChatClient", () => {
     expect(errorLog).not.toHaveBeenCalled();
     expect(warnLog).not.toHaveBeenCalled();
   });
+
+  // Passing null explicitly is the only way one session can bypass a globally registered
+  // client; `||` discarded it and kept proxying that session.
+  test("an explicit per-session null opts out of the global client", () => {
+    GlobalConfig.getCustomChatClient.mockReturnValue(completeClient());
+    const client = ChatClientFactory.getCachedClient({ customChatClient: null }, {});
+    expect(client.constructor.name).toBe("AWSChatClient");
+  });
+
+  test("an omitted key still falls back to the global client", () => {
+    const global = completeClient();
+    GlobalConfig.getCustomChatClient.mockReturnValue(global);
+    expect(ChatClientFactory.getCachedClient({}, {})).toBe(global);
+  });
+});
+
+describe("ChatClient base class stubs", () => {
+  // index.d.ts states that leaving the optional operations inherited is supported, so an
+  // inherited stub must reject -- a synchronous throw escapes the caller's .catch() and
+  // reaches window.onerror instead.
+  const INHERITED = [
+    ["sendAttachment", [null, {}, {}]],
+    ["downloadAttachment", [null, "id"]],
+    ["getAttachmentURL", [null, "id"]],
+    ["describeView", ["viewToken", null]],
+    ["getAuthenticationUrl", [null, "uri", "sid"]],
+    ["cancelParticipantAuthentication", [null, "sid"]]
+  ];
+
+  test.each(INHERITED)("%s rejects rather than throwing synchronously", async (name, args) => {
+    const client = new (class extends ChatClient {})();
+    const rejection = await client[name](...args).then(() => null, e => e);
+    expect(rejection).toBeInstanceOf(Error);
+    expect(rejection.message).toContain(name);
+  });
 });

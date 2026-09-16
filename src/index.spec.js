@@ -2,7 +2,8 @@ import { ChatSession } from "./index";
 import pkg from '../package.json';
 
 const ChatSessionObject = {
-    csmService: "csmService"
+    csmService: "csmService",
+    ChatClient: "ChatClient"
 };
 const LogLevel = "LogLevel";
 const LogManager = "LogManager";
@@ -25,6 +26,13 @@ describe("Chat JS index file", () => {
         expect(global.connect.LogManager).toEqual(LogManager);
         expect(global.connect.LogLevel).toEqual(LogLevel);
         expect(global.connect.csmService).toEqual("csmService");
+    });
+
+    // index.d.ts types connect.ChatClient as an extendable class, so `extends connect.ChatClient`
+    // compiles; without this the customer's bundle throws before any chat starts.
+    test("should expose the ChatClient base class on the connect namespace", () => {
+        expect(global.connect.ChatClient).toEqual("ChatClient");
+        expect(global.connect.ChatSession.ChatClient).toEqual("ChatClient");
     });
 
     test('should expose ChatJS.version with correct version', () => {

@@ -55,8 +55,10 @@ class GlobalConfigImpl {
             this.features["values"] = new Array();
         }
         this.customUserAgentSuffix = config.customUserAgentSuffix || this.customUserAgentSuffix;
-        
-        if ("customChatClient" in config) {
+
+        // undefined means "not supplied" -- `{ ...base, customChatClient: undefined }` from a
+        // second caller must not silently un-register the client. Explicit null still clears.
+        if (config.customChatClient !== undefined) {
             this.customChatClient = config.customChatClient;
         }
     }

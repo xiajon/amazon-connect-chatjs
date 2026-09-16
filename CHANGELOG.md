@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `customChatClient` — supply your own transport in place of the bundled AWS client, per session via `ChatSession.create({ options })` or globally via `setGlobalConfig()`. Extend the exported base class, reachable as either `connect.ChatSession.ChatClient` or `connect.ChatClient`.
+
+### Fixed
+- `connect.ChatClient` is now assigned at runtime. The typings declared it as an extendable class, so `class MyClient extends connect.ChatClient {}` compiled and then threw `Class extends value undefined is not a constructor or null` at module evaluation.
+- An unimplemented `ChatClient` operation now **rejects** instead of throwing synchronously. Leaving the optional operations inherited is supported, but the stub threw before returning a promise, so the exception escaped the caller's `.catch()` and reached `window.onerror`, and no failure metric was recorded.
+- `createParticipantConnection` responses missing `Websocket` or `ConnectionCredentials` now reject with a message naming the missing field. Previously the unguarded dereference produced `TypeError: Cannot read properties of undefined`, reported as `"Failed to fetch connectionDetails"` — blaming a service that was never called.
+- `setGlobalConfig({ customChatClient: undefined })` no longer un-registers a previously registered client. A second caller spreading its own config (`{ ...base, customChatClient: props.client }`) silently reverted ChatJS to the bundled AWS client, sending participant tokens straight from the browser to the Participant Service with no log line.
+- `setGlobalConfig` with a truthy non-object no longer throws `TypeError: Cannot use 'in' operator`, which aborted global initialization before the websocket, logger and message-receipt defaults were applied.
+- `ChatSession.create({ options: { customChatClient: null } })` now opts that session out of a globally registered client instead of silently keeping it proxied.
+- An unparseable connection-token `Expiry` no longer produces `setTimeout(NaN)`, which fired immediately and re-armed at zero, polling the configured transport once per macrotask for the life of the page.
+
+### Changed
+- **Breaking (types only):** `GetTranscriptResult.NextToken` is now optional, matching the Participant Service, which omits it on the last page. Strict-mode consumers assigning it to `string` must widen to `string | undefined`.
+
 ## [5.1.0]
 ### Added
 - `sendMessageReceipt()` method that sends Read/Delivered receipts directly, bypassing the automatic receipt gate and throttle. This allows manual control over when receipts are sent regardless of the `shouldSendMessageReceipts` setting.

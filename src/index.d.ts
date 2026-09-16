@@ -169,7 +169,12 @@ declare namespace connect {
     ): Promise<{ data: unknown }>;
   }
 
-  /** The response shape ChatJS expects from `createParticipantConnection`. */
+  /**
+   * The response shape ChatJS expects from `createParticipantConnection`. Both blocks are
+   * optional because ChatJS also calls the operation with `type === null` to acknowledge an
+   * agent connection, and then reads nothing back. Whenever `type` is non-null, ChatJS
+   * requires BOTH blocks and rejects with a named error if either is missing.
+   */
   interface CreateParticipantConnectionResult {
     readonly Websocket?: {
       readonly Url: string;

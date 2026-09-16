@@ -12,7 +12,12 @@ class MinimalClient extends connect.ChatSession.ChatClient {
     type: string[] | null,
     acknowledgeConnection: boolean | null
   ) {
-    return Promise.resolve({ data: {} });
+    return Promise.resolve({
+      data: {
+        Websocket: { Url: "wss://example.com", ConnectionExpiry: "2026-01-01T00:00:00Z" },
+        ConnectionCredentials: { ConnectionToken: "token", Expiry: "2026-01-01T00:00:00Z" }
+      }
+    });
   }
 
   disconnectParticipant(connectionToken: string | null) {
@@ -66,4 +71,40 @@ class WrongSignature extends MinimalClient {
 // @ts-expect-error: missing the other ten operations
 const partialDuckType: connect.ChatClient = { sendMessage: () => Promise.resolve({ data: {} }) };
 
-export { MinimalClient, textOnly, perSession, EmptySubclass, bareBase, WrongSignature, partialDuckType };
+// The base class is reachable both ways, so both must compile and both must exist at runtime.
+class ViaNamespaceRoot extends connect.ChatClient {
+  createParticipantConnection(
+    participantToken: string | null,
+    type: string[] | null,
+    acknowledgeConnection: boolean | null
+  ) {
+    return new MinimalClient().createParticipantConnection(participantToken, type, acknowledgeConnection);
+  }
+
+  disconnectParticipant(connectionToken: string | null) {
+    return new MinimalClient().disconnectParticipant(connectionToken);
+  }
+
+  sendMessage(connectionToken: string | null, content: string, contentType: string, clientToken?: string) {
+    return new MinimalClient().sendMessage(connectionToken, content, contentType, clientToken);
+  }
+
+  sendEvent(connectionToken: string | null, contentType: string, content: string, clientToken?: string) {
+    return new MinimalClient().sendEvent(connectionToken, contentType, content, clientToken);
+  }
+
+  getTranscript(connectionToken: string | null, args: connect.GetTranscriptArgs) {
+    return new MinimalClient().getTranscript(connectionToken, args);
+  }
+}
+
+export {
+  MinimalClient,
+  textOnly,
+  perSession,
+  EmptySubclass,
+  bareBase,
+  WrongSignature,
+  partialDuckType,
+  ViaNamespaceRoot
+};

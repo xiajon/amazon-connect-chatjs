@@ -82,7 +82,14 @@ export default class BaseConnectionHelper {
             this.getConnectionTokenExpiry()
         ).getTime();
         var now = new Date().getTime();
-        return dateExpiry - now - CONNECTION_TOKEN_EXPIRY_BUFFER_IN_MS;
+        var timeToExpiry = dateExpiry - now - CONNECTION_TOKEN_EXPIRY_BUFFER_IN_MS;
+        // NaN would make setTimeout fire immediately and re-arm at 0 forever.
+        if (!Number.isFinite(timeToExpiry)) {
+            this.logger.error("Unparseable connection token Expiry; falling back to the polling interval.",
+                this.getConnectionTokenExpiry());
+            return CONNECTION_TOKEN_POLLING_INTERVAL_IN_MS;
+        }
+        return timeToExpiry;
     }
 }
 

@@ -4,6 +4,40 @@ import {ACPS_METHODS, CSM_CATEGORY, SESSION_TYPES } from "../../constants";
 import { csmService } from "../../service/csmService";
 
 jest.useFakeTimers();
+describe("customChatClient response validation", () => {
+    // A custom client owns this response, so a missing block must name itself rather than
+    // surfacing as "Failed to fetch connectionDetails" with an undefined dereference.
+    function providerReturning(data) {
+        return new ConnectionDetailsProvider(null, {
+            createParticipantConnection: () => Promise.resolve({ data })
+        }, SESSION_TYPES.CUSTOMER);
+    }
+
+    beforeEach(() => {
+        jest.spyOn(csmService, "addLatencyMetricWithStartTime").mockImplementation(() => {});
+        jest.spyOn(csmService, "addCountAndErrorMetric").mockImplementation(() => {});
+    });
+
+    test.each([
+        ["neither block", {}, "Websocket, ConnectionCredentials"],
+        ["no ConnectionCredentials", { Websocket: { Url: "wss://u", ConnectionExpiry: "e" } }, "ConnectionCredentials"],
+        ["no Websocket", { ConnectionCredentials: { ConnectionToken: "t", Expiry: "e" } }, "Websocket"]
+    ])("rejects naming the missing field: %s", async (_label, data, expected) => {
+        const err = await providerReturning(data).fetchConnectionDetails().catch(e => e);
+        expect(String(err._debug)).toContain("createParticipantConnection must resolve");
+        expect(String(err._debug)).toContain(expected);
+    });
+
+    test("accepts a complete response", async () => {
+        const details = await providerReturning({
+            Websocket: { Url: "wss://u", ConnectionExpiry: "wsExpiry" },
+            ConnectionCredentials: { ConnectionToken: "cToken", Expiry: "tokenExpiry" }
+        }).fetchConnectionDetails();
+        expect(details.connectionToken).toBe("cToken");
+        expect(details.url).toBe("wss://u");
+    });
+});
+
 describe("ConnectionDetailsProvider", () => {
 
     const chatClient = {

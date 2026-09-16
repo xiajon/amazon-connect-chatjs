@@ -17,6 +17,8 @@ connect.ChatSession = connect.ChatSession || ChatSessionObject;
 connect.LogManager = connect.LogManager || LogManager;
 connect.LogLevel = connect.LogLevel || LogLevel;
 connect.csmService = connect.csmService || ChatSessionObject.csmService;
+// index.d.ts declares connect.ChatClient as a class, so it must be a real value here too.
+connect.ChatClient = connect.ChatClient || ChatSessionObject.ChatClient;
 export const ChatSession = ChatSessionObject;
 
 // Expose READ-ONLY global window.connect.ChatJS.version

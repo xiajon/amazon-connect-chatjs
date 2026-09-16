@@ -47,6 +47,16 @@ export default class ConnectionDetailsProvider {
     }
 
     _handleCreateParticipantConnectionResponse(connectionDetails, ConnectParticipant) {
+        // A customChatClient owns this response, so name what is missing rather than
+        // dereferencing undefined and reporting it as an ACPS failure.
+        const missing = ["Websocket", "ConnectionCredentials"].filter(k => !connectionDetails?.[k]);
+        if (missing.length > 0) {
+            throw new IllegalArgumentException(
+                "createParticipantConnection must resolve { data: { Websocket, ConnectionCredentials } } " +
+                `when type is requested; missing: ${missing.join(", ")}`,
+                connectionDetails
+            );
+        }
         this.connectionDetails = {
             url: connectionDetails.Websocket.Url,
             expiry: connectionDetails.Websocket.ConnectionExpiry,
